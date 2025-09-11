@@ -5,6 +5,225 @@ import {
   AlertTriangle, Activity, ArrowUp, ArrowDown, Target, Bell 
 } from 'lucide-react';
 
+// Add this new component after your imports
+const DemoControlPanel = ({ 
+  metrics, 
+  setMetrics, 
+  customerData, 
+  setCustomerData, 
+  insights, 
+  setInsights,
+  onTriggerEvent 
+}) => {
+  const [showControls, setShowControls] = useState(false);
+
+  // Predefined scenarios
+  const scenarios = {
+    normal: {
+      name: "Normal Operations",
+      metrics: { mrr: 129700, dailyUsers: 2223, pipelineValue: 618000, apiResponseTime: 83, churnRisk: 2 },
+      insights: [
+        { id: 1, type: 'opportunity', category: 'Revenue', title: 'Expansion Opportunity', message: 'CloudServ Inc ready for upsell', action: 'Schedule expansion call' }
+      ]
+    },
+    crisis: {
+      name: "Crisis Mode", 
+      metrics: { mrr: 95000, dailyUsers: 1645, pipelineValue: 285000, apiResponseTime: 165, churnRisk: 7 },
+      insights: [
+        { id: 1, type: 'critical', category: 'Customer Success', title: 'Mass Churn Alert', message: '$127K MRR at risk', action: 'URGENT intervention required' },
+        { id: 2, type: 'critical', category: 'Product', title: 'Performance Crisis', message: 'API degraded 180%', action: 'Emergency scaling needed' }
+      ]
+    },
+    growth: {
+      name: "Growth Surge",
+      metrics: { mrr: 168500, dailyUsers: 2856, pipelineValue: 890000, apiResponseTime: 65, churnRisk: 1 },
+      insights: [
+        { id: 1, type: 'opportunity', category: 'Revenue', title: 'Multiple Expansions', message: '5 customers ready for upgrade', action: 'Accelerate upsell motions' }
+      ]
+    }
+  };
+
+  const applyScenario = (scenarioKey) => {
+    const scenario = scenarios[scenarioKey];
+    setMetrics(scenario.metrics);
+    setInsights(scenario.insights);
+    
+    // Update customer health based on scenario
+    const updatedCustomers = customerData.map(customer => {
+      if (scenarioKey === 'crisis') {
+        return { ...customer, health: Math.max(15, customer.health - 50), risk: customer.health < 40 ? 'Critical' : 'High' };
+      } else if (scenarioKey === 'growth') {
+        return { ...customer, health: Math.min(95, customer.health + 20), risk: 'Low' };
+      }
+      return customer;
+    });
+    setCustomerData(updatedCustomers);
+  };
+
+  const triggerCustomEvent = (eventType) => {
+    const events = {
+      churn_alert: { type: 'critical', title: 'Churn Risk Detected', message: 'Enterprise customer showing 40% usage decline' },
+      expansion: { type: 'opportunity', title: 'Expansion Signal', message: 'Customer hit 95% of plan limits' },
+      performance: { type: 'warning', title: 'Performance Spike', message: 'API response time increased 25%' },
+      deal_won: { type: 'success', title: 'Deal Closed', message: 'Major enterprise deal signed - $85K ARR' }
+    };
+    
+    if (onTriggerEvent && events[eventType]) {
+      onTriggerEvent(events[eventType]);
+    }
+  };
+
+  const updateCustomerHealth = (customerId, newHealth) => {
+    const updated = customerData.map(customer => 
+      customer.id === customerId 
+        ? { 
+            ...customer, 
+            health: newHealth,
+            risk: newHealth < 40 ? 'Critical' : newHealth < 70 ? 'High' : 'Low'
+          }
+        : customer
+    );
+    setCustomerData(updated);
+  };
+
+  if (!showControls) {
+    return (
+      <div className="fixed bottom-4 right-4 z-50">
+        <button
+          onClick={() => setShowControls(true)}
+          className="bg-purple-600 text-white px-4 py-2 rounded-lg shadow-lg hover:bg-purple-700 transition-colors"
+        >
+          🎮 Demo Controls
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="fixed bottom-4 right-4 z-50 bg-white rounded-lg shadow-2xl border border-gray-200 p-4 max-w-md">
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="font-semibold text-gray-900">🎮 Live Demo Controls</h3>
+        <button
+          onClick={() => setShowControls(false)}
+          className="text-gray-400 hover:text-gray-600"
+        >
+          ✕
+        </button>
+      </div>
+
+      {/* Quick Scenarios */}
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-gray-700 mb-2">Quick Scenarios</label>
+        <div className="grid grid-cols-1 gap-2">
+          {Object.entries(scenarios).map(([key, scenario]) => (
+            <button
+              key={key}
+              onClick={() => applyScenario(key)}
+              className={`px-3 py-2 text-sm rounded border text-left ${
+                key === 'crisis' ? 'border-red-300 text-red-700 hover:bg-red-50' :
+                key === 'growth' ? 'border-green-300 text-green-700 hover:bg-green-50' :
+                'border-blue-300 text-blue-700 hover:bg-blue-50'
+              }`}
+            >
+              {scenario.name}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Metric Controls */}
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-gray-700 mb-2">Adjust Metrics</label>
+        <div className="space-y-2 text-xs">
+          <div>
+            <label>MRR: ${metrics.mrr?.toLocaleString()}</label>
+            <input
+              type="range"
+              min="50000"
+              max="200000"
+              step="5000"
+              value={metrics.mrr || 129700}
+              onChange={(e) => setMetrics(prev => ({ ...prev, mrr: parseInt(e.target.value) }))}
+              className="w-full"
+            />
+          </div>
+          <div>
+            <label>API Response: {metrics.apiResponseTime}ms</label>
+            <input
+              type="range"
+              min="50"
+              max="300"
+              step="10"
+              value={metrics.apiResponseTime || 83}
+              onChange={(e) => setMetrics(prev => ({ ...prev, apiResponseTime: parseInt(e.target.value) }))}
+              className="w-full"
+            />
+          </div>
+          <div>
+            <label>Daily Users: {metrics.dailyUsers?.toLocaleString()}</label>
+            <input
+              type="range"
+              min="1000"
+              max="5000"
+              step="100"
+              value={metrics.dailyUsers || 2223}
+              onChange={(e) => setMetrics(prev => ({ ...prev, dailyUsers: parseInt(e.target.value) }))}
+              className="w-full"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Customer Health Controls */}
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-gray-700 mb-2">Customer Health</label>
+        <div className="space-y-2">
+          {customerData.slice(0, 3).map((customer) => (
+            <div key={customer.id} className="flex items-center justify-between text-xs">
+              <span className="truncate mr-2">{customer.name?.substring(0, 15)}...</span>
+              <input
+                type="range"
+                min="10"
+                max="100"
+                step="5"
+                value={customer.health}
+                onChange={(e) => updateCustomerHealth(customer.id, parseInt(e.target.value))}
+                className="w-20"
+              />
+              <span className="w-8 text-right">{customer.health}%</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Event Triggers */}
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-gray-700 mb-2">Trigger Events</label>
+        <div className="grid grid-cols-2 gap-1">
+          {[
+            { key: 'churn_alert', label: '⚠️ Churn', color: 'red' },
+            { key: 'expansion', label: '📈 Expand', color: 'green' },
+            { key: 'performance', label: '⚡ Perf', color: 'yellow' },
+            { key: 'deal_won', label: '🎉 Win', color: 'blue' }
+          ].map(event => (
+            <button
+              key={event.key}
+              onClick={() => triggerCustomEvent(event.key)}
+              className={`px-2 py-1 text-xs rounded border hover:bg-${event.color}-50 border-${event.color}-300 text-${event.color}-700`}
+            >
+              {event.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded">
+        💡 <strong>Live Demo Tip:</strong> In production, this data flows from your CRM, support system, and product analytics automatically.
+      </div>
+    </div>
+  );
+};
+
 const Dashboard = () => {
   const [isRunning, setIsRunning] = useState(false);
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -160,44 +379,45 @@ const Dashboard = () => {
     );
   };
 
-  const customerData = [
-    {
-      id: 'CUST-1001',
-      name: 'TechCorp Solutions',
-      plan: 'Enterprise',
-      mrr: 8500,
-      health: 85,
-      risk: 'Low',
-      trend: 'stable'
-    },
-    {
-      id: 'CUST-1002',
-      name: 'DataFlow Industries', 
-      plan: 'Professional',
-      mrr: 3200,
-      health: 25,
-      risk: 'High',
-      trend: 'declining'
-    },
-    {
-      id: 'CUST-1003',
-      name: 'CloudServ Inc',
-      plan: 'Enterprise',
-      mrr: 12000,
-      health: 95,
-      risk: 'Low',
-      trend: 'growing'
-    },
-    {
-      id: 'CUST-1004',
-      name: 'StartupX',
-      plan: 'Starter',
-      mrr: 899,
-      health: 62,
-      risk: 'Medium',
-      trend: 'stable'
-    }
-  ];
+  // Replace the existing customerData array with this state
+const [customerData, setCustomerData] = useState([
+  {
+    id: 'CUST-1001',
+    name: 'TechCorp Solutions',
+    plan: 'Enterprise',
+    mrr: 8500,
+    health: 85,
+    risk: 'Low',
+    trend: 'stable'
+  },
+  {
+    id: 'CUST-1002',
+    name: 'DataFlow Industries', 
+    plan: 'Professional',
+    mrr: 3200,
+    health: 25,
+    risk: 'High',
+    trend: 'declining'
+  },
+  {
+    id: 'CUST-1003',
+    name: 'CloudServ Inc',
+    plan: 'Enterprise',
+    mrr: 12000,
+    health: 95,
+    risk: 'Low',
+    trend: 'growing'
+  },
+  {
+    id: 'CUST-1004',
+    name: 'StartupX',
+    plan: 'Starter',
+    mrr: 899,
+    health: 62,
+    risk: 'Medium',
+    trend: 'stable'
+  }
+]);
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
@@ -432,6 +652,22 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* Demo Control Panel */}
+      <DemoControlPanel
+        metrics={metrics}
+        setMetrics={setMetrics}
+        customerData={customerData}
+        setCustomerData={setCustomerData}
+        insights={insights}
+        setInsights={setInsights}
+        onTriggerEvent={(event) => {
+          setEvents(prev => [
+            { ...event, id: Date.now(), timestamp: new Date() },
+            ...prev.slice(0, 4)
+          ]);
+        }}
+      />
     </div>
   );
 };
